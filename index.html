@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Leitor de Requisições WL</title>
+
+<style>
+:root {
+  --bg: #f4f7f5;
+  --card: #ffffff;
+  --text: #17201b;
+  --muted: #66736b;
+  --primary: #2f7d4a;
+  --primary-dark: #25633a;
+  --border: #dce5df;
+  --danger: #b42318;
+  --ok: #18794e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 28px 18px 50px;
+}
+
+header {
+  margin-bottom: 22px;
+}
+
+h1 {
+  margin: 0 0 5px;
+  font-size: 28px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.04);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+label {
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #cbd7cf;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  font: inherit;
+}
+
+input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47,125,74,.12);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 17px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: bold;
+}
+
+.primary {
+  background: var(--primary);
+  color: white;
+}
+
+.primary:hover {
+  background: var(--primary-dark);
+}
+
+.secondary {
+  background: #e9f0eb;
+  color: #245f38;
+}
+
+.ghost {
+  background: #f1f3f2;
+  color: #33423a;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.status {
+  margin-top: 13px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #f2f5f3;
+  color: #4e5c54;
+}
+
+.status.ok {
+  background: #e8f6ee;
+  color: var(--ok);
+}
+
+.status.error {
+  background: #fff0ef;
+  color: var(--danger);
+}
+
+.search-box {
+  display: flex;
+  gap: 10px;
+}
+
+.search-box input {
+  flex: 1;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.fact {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px;
+  background: #fafcfb;
+}
+
+.fact small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.fact strong {
+  word-break: break-word;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  margin-top: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 11px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: #f5f8f6;
+  font-size: 13px;
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+.note {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.code {
+  font-family: monospace;
+  background: #f4f6f5;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+@media (max-width: 700px) {
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .facts {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box {
+    flex-direction: column;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <header>
+
+    <h1>Leitor de Requisições WL</h1>
+
+    <p class="subtitle">
+      Pesquisa de requisições diretamente no WL.
+    </p>
+
+  </header>
+
+
+  <!-- LOGIN -->
+
+  <section class="card">
+
+    <h2>Acesso ao WL</h2>
+
+    <div class="grid">
+
+      <div class="field full">
+
+        <label for="wlUrl">
+          Endereço do WL
+        </label>
+
+        <input
+          id="wlUrl"
+          type="url"
+          placeholder="https://seu-wl.com.br"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="username">
+          Usuário
+        </label>
+
+        <input
+          id="username"
+          type="text"
+          autocomplete="username"
+          placeholder="Seu usuário"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="password">
+          Senha
+        </label>
+
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Sua senha"
+        >
+
+      </div>
+
+    </div>
+
+
+    <div class="actions">
+
+      <button
+        id="connectButton"
+        class="primary"
+      >
+        Conectar ao WL
+      </button>
+
+
+      <button
+        id="clearButton"
+        class="ghost"
+      >
+        Limpar
+      </button>
+
+    </div>
+
+
+    <div
+      id="connectionStatus"
+      class="status"
+    >
+      Ainda não conectado.
+    </div>
+
+
+    <p class="note">
+      A conexão real será configurada depois que identificarmos
+      como o WL realiza o login e disponibiliza as requisições.
+    </p>
+
+  </section>
+
+
+
+  <!-- PESQUISA -->
+
+  <section class="card">
+
+    <h2>Pesquisar requisição</h2>
+
+
+    <div class="search-box">
+
+      <input
+        id="rqInput"
+        type="text"
+        placeholder="Digite a RQ, por exemplo RQ-3026"
+      >
+
+
+      <button
+        id="searchButton"
+        class="primary"
+        disabled
+      >
+        Pesquisar
+      </button>
+
+    </div>
+
+
+    <div
+      id="searchStatus"
+      class="status"
+    >
+      Conecte-se ao WL para habilitar a pesquisa.
+    </div>
+
+
+
+    <!-- RESULTADO -->
+
+    <div
+      id="result"
+      hidden
+    >
+
+      <div class="facts">
+
+
+        <div class="fact">
+
+          <small>
+            Requisição
+          </small>
+
+          <strong id="rqNumber">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="fact">
+
+          <small>
+            Solicitante
+          </small>
+
+          <strong id="rqRequester">
+            —
+          </strong>
+
+        </div>
+
+
+        <div class="fact">
+
+          <small>
+            Contrato / Unidade
+          </small>
+
+          <strong id="rqContract">
+            —
+          </strong>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Código
+              </th>
+
+              <th>
+                Produto / descrição
+              </th>
+
+              <th>
+                Quantidade
+              </th>
+
+              <th>
+                Colaborador
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="itemsTable">
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+
+      <div class="actions">
+
+        <button
+          id="copyButton"
+          class="secondary"
+        >
+          Copiar resultado
+        </button>
+
+
+        <button
+          id="clearResultButton"
+          class="ghost"
+        >
+          Limpar resultado
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- INFORMAÇÕES -->
+
+  <section class="card">
+
+    <h2>Objetivo do programa</h2>
+
+    <p>
+      A ideia é fazer o aplicativo funcionar como uma
+      barra de pesquisa do WL.
+    </p>
+
+    <p class="code">
+      Seu programa → WL → pesquisa RQ → dados da RQ → tabela
+    </p>
+
+    <p class="note">
+      A versão final deverá entrar no WL, localizar a requisição,
+      extrair os dados e apresentar tudo automaticamente aqui.
+    </p>
+
+  </section>
+
+</div>
+
+
+
+<script>
+
+/*
+==========================================================
+ESTADO DO APLICATIVO
+==========================================================
+*/
+
+let conectado = false;
+
+let ultimoResultado = null;
+
+
+
+/*
+==========================================================
+ATALHO PARA ELEMENTOS
+==========================================================
+*/
+
+function $(id) {
+
+  return document.getElementById(id);
+
+}
+
+
+
+/*
+==========================================================
+STATUS
+==========================================================
+*/
+
+function mostrarStatus(elemento, texto, tipo = "") {
+
+  elemento.textContent = texto;
+
+  elemento.className = "status " + tipo;
+
+}
+
+
+
+/*
+==========================================================
+BOTÃO CONECTAR
+==========================================================
+*/
+
+$("connectButton").addEventListener(
+  "click",
+  async function() {
+
+    const url =
+      $("wlUrl").value.trim();
+
+    const usuario =
+      $("username").value.trim();
+
+    const senha =
+      $("password").value;
+
+
+    if (!url) {
+
+      mostrarStatus(
+        $("connectionStatus"),
+        "Informe o endereço do WL.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    if (!usuario) {
+
+      mostrarStatus(
+        $("connectionStatus"),
+        "Informe o usuário.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    if (!senha) {
+
+      mostrarStatus(
+        $("connectionStatus"),
+        "Informe a senha.",
+        "error"
+      );
+
+      return;
+    }
+
+
+
+    /*
+    ======================================================
+    ATENÇÃO
+
+    AQUI SERÁ COLOCADA A CONEXÃO REAL COM O WL.
+
+    Não coloque uma senha fixa no código.
+
+    Dependendo de como o WL funciona,
+    poderemos usar:
+
+    1. API do WL
+
+    ou
+
+    2. Navegador automatizado com Playwright
+
+    ou
+
+    3. Programa local intermediário.
+
+    ======================================================
+    */
+
+
+    mostrarStatus(
+      $("connectionStatus"),
+      "Dados recebidos. A conexão real com o WL ainda precisa ser configurada.",
+      "ok"
+    );
+
+
+    /*
+    Neste arquivo-base ainda não afirmamos
+    que o login funcionou.
+
+    Por isso a pesquisa continua bloqueada.
+    */
+
+    conectado = false;
+
+    $("searchButton").disabled = true;
+
+
+    mostrarStatus(
+      $("searchStatus"),
+      "Aguardando a integração real com o WL."
+    );
+
+  }
+);
+
+
+
+/*
+==========================================================
+LIMPAR LOGIN
+==========================================================
+*/
+
+$("clearButton").addEventListener(
+  "click",
+  function() {
+
+    $("wlUrl").value = "";
+
+    $("username").value = "";
+
+    $("password").value = "";
+
+    conectado = false;
+
+    $("searchButton").disabled = true;
+
+
+    mostrarStatus(
+      $("connectionStatus"),
+      "Ainda não conectado."
+    );
+
+
+    mostrarStatus(
+      $("searchStatus"),
+      "Conecte-se ao WL para habilitar a pesquisa."
+    );
+
+  }
+);
+
+
+
+/*
+==========================================================
+PESQUISAR RQ
+==========================================================
+*/
+
+$("searchButton").addEventListener(
+  "click",
+  async function() {
+
+    const pesquisa =
+      $("rqInput").value.trim();
+
+
+    if (!pesquisa) {
+
+      mostrarStatus(
+        $("searchStatus"),
+        "Digite uma requisição.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    /*
+    ======================================================
+    FUTURA CONEXÃO COM WL
+
+    Aqui será feito:
+
+    1. Acessar o WL
+    2. Pesquisar a RQ
+    3. Abrir a requisição
+    4. Ler os dados
+    5. Passar para renderizarResultado()
+
+    ======================================================
+    */
+
+
+    mostrarStatus(
+      $("searchStatus"),
+      "A pesquisa ainda não está conectada ao WL."
+    );
+
+  }
+);
+
+
+
+/*
+==========================================================
+LIMPAR RESULTADO
+==========================================================
+*/
+
+$("clearResultButton").addEventListener(
+  "click",
+  function() {
+
+    $("result").hidden = true;
+
+    $("itemsTable").innerHTML = "";
+
+    ultimoResultado = null;
+
+  }
+);
+
+
+
+/*
+==========================================================
+COPIAR RESULTADO
+==========================================================
+*/
+
+$("copyButton").addEventListener(
+  "click",
+  async function() {
+
+    if (!ultimoResultado) {
+
+      return;
+
+    }
+
+
+    const linhas = [];
+
+
+    linhas.push(
+      "Requisição: " +
+      (ultimoResultado.requisicao || "")
+    );
+
+
+    linhas.push(
+      "Solicitante: " +
+      (ultimoResultado.solicitante || "")
+    );
+
+
+    linhas.push(
+      "Contrato / Unidade: " +
+      (ultimoResultado.contrato || "")
+    );
+
+
+    linhas.push("");
+
+
+    linhas.push(
+      "Código | Produto | Quantidade | Colaborador"
+    );
+
+
+    for (
+      const item
+      of (ultimoResultado.itens || [])
+    ) {
+
+      linhas.push(
+
+        [
+          item.codigo || "",
+          item.nome || "",
+          item.solicitado ?? "",
+          item.colaborador || ""
+
+        ].join(" | ")
+
+      );
+
+    }
+
+
+    await navigator.clipboard.writeText(
+      linhas.join("\n")
+    );
+
+
+    mostrarStatus(
+      $("searchStatus"),
+      "Resultado copiado.",
+      "ok"
+    );
+
+  }
+);
+
+
+
+/*
+==========================================================
+RENDERIZAR RESULTADO
+
+Esta função já está pronta para receber
+os dados vindos do WL.
+
+Formato esperado:
+
+{
+  requisicao: "RQ-3026",
+
+  solicitante: "João",
+
+  contrato: "Contrato / Unidade",
+
+  itens: [
+
+    {
+      codigo: "001234",
+      nome: "Capacete",
+      solicitado: 1,
+      colaborador: "João"
+    }
+
+  ]
+}
+
+==========================================================
+*/
+
+function renderizarResultado(data) {
+
+  ultimoResultado = data;
+
+
+  $("rqNumber").textContent =
+    data.requisicao || "—";
+
+
+  $("rqRequester").textContent =
+    data.solicitante || "—";
+
+
+  $("rqContract").textContent =
+    data.contrato || "—";
+
+
+
+  const tabela =
+    $("itemsTable");
+
+
+  tabela.innerHTML = "";
+
+
+
+  for (
+    const item
+    of (data.itens || [])
+  ) {
+
+    const linha =
+      document.createElement("tr");
+
+
+    const codigo =
+      document.createElement("td");
+
+    codigo.textContent =
+      item.codigo || "";
+
+
+    const produto =
+      document.createElement("td");
+
+    produto.textContent =
+      item.nome || "";
+
+
+    const quantidade =
+      document.createElement("td");
+
+    quantidade.textContent =
+      item.solicitado ?? "";
+
+
+    const colaborador =
+      document.createElement("td");
+
+    colaborador.textContent =
+      item.colaborador || "";
+
+
+
+    linha.appendChild(codigo);
+
+    linha.appendChild(produto);
+
+    linha.appendChild(quantidade);
+
+    linha.appendChild(colaborador);
+
+
+    tabela.appendChild(linha);
+
+  }
+
+
+  $("result").hidden = false;
+
+}
+
+
+
+/*
+==========================================================
+EXEMPLO DE TESTE
+
+Você pode testar a aparência do resultado
+sem conectar ao WL.
+
+No console do navegador:
+
+renderizarResultado({
+  requisicao: "RQ-3026",
+  solicitante: "João Silva",
+  contrato: "Contrato X / Unidade Y",
+  itens: [
+    {
+      codigo: "001234",
+      nome: "Capacete de segurança",
+      solicitado: 2,
+      colaborador: "João Silva"
+    },
+    {
+      codigo: "005678",
+      nome: "Luva de proteção - tamanho M",
+      solicitado: 10,
+      colaborador: "Carlos"
+    }
+  ]
+});
+
+==========================================================
+*/
+
+</script>
+
+</body>
+</html>
